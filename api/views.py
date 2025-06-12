@@ -3,6 +3,7 @@ import requests
 import locale
 import logging
 from json import JSONDecodeError
+import cloudscraper
 
 from django.http import HttpResponse
 from .images import UNKNOWN, UNRATED, BRONZE, SILVER, GOLD, PLATINUM, DIAMOND, RUBY, MASTER
@@ -85,7 +86,13 @@ class UrlSettings(object):
 class BojDefaultSettings(object):
     def __init__(self, request, url_set):
         try:
-            self.json = requests.get(url_set.user_information_url).json()
+            # self.json = requests.get(url_set.user_information_url).json()
+            scraper = cloudscraper.create_scraper()
+            resp = scraper.get(url_set.user_information_url)
+            if resp.status_code != 200:
+                logger.error(f"API request failed: {resp.status_code} {resp.text}")
+                raise JSONDecodeError("Non-200 response", resp.text, 0)
+            self.json = resp.json()
             self.rating = self.json['rating']
             self.level = self.boj_rating_to_lv(self.json['rating'])
             self.solved = '{0:n}'.format(self.json['solvedCount'])
